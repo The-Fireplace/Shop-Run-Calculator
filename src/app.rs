@@ -1,22 +1,27 @@
-mod viewer;
-
 use std::error::Error;
 use std::io;
 use std::time::Duration;
+
 use crossterm::event;
-use crossterm::event::{Event, KeyCode, KeyEventKind};
-use ratatui::prelude::Stylize;
-use ratatui::widgets::Paragraph;
+use crossterm::event::{Event, KeyCode, KeyEvent, KeyEventKind};
+use ratatui::prelude::{Stylize, Widget};
+
 use crate::app::viewer::Viewer;
 use crate::tui::Tui;
+
+mod viewer;
+
+pub struct App {
+    screen: Screen,
+    exit: bool,
+}
 
 enum Screen {
     Viewer(Viewer),
 }
 
-pub struct App {
-    screen: Screen,
-    exit: bool,
+trait KeyEventHandler {
+    fn handle_key_event(self, key_code: KeyCode);
 }
 
 impl App {
@@ -30,21 +35,25 @@ impl App {
     pub fn run(&mut self, terminal: &mut Tui) -> io::Result<()> {
         while !self.exit {
             terminal.draw(|frame| {
-                let area = frame.size();
-                frame.render_widget(
-                    Paragraph::new("Hello Ratatui! (press 'q' to quit)")
-                        .white()
-                        .on_blue(),
-                    area,
-                );
+                match &self.screen {
+                    Screen::Viewer(viewer) => {
+                        frame.render_widget(viewer, frame.size())
+                    }
+                }
             })?;
 
             if event::poll(Duration::from_millis(10))? {
                 if let Event::Key(key) = event::read()? {
                     if key.kind == KeyEventKind::Press
-                        && key.code == KeyCode::Char('q')
                     {
-                        self.exit = true;
+                        let key_code = key.code;
+                        if key_code == KeyCode::Esc {
+                            self.exit = true;
+                        } else {
+                            match &mut self.screen {
+                                Screen::Viewer(viewer) => viewer.handle_key_event(key_code)
+                            }
+                        }
                     }
                 }
             }
