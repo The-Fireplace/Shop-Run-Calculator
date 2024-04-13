@@ -12,17 +12,19 @@ use ratatui::widgets::{Block, Borders};
 use ratatui::widgets::block::{Position, Title};
 
 use crate::app::viewer::Viewer;
+use crate::data::Database;
 use crate::tui::Tui;
 
 mod viewer;
 
-pub struct App {
-    screen: Screen,
+pub struct App<'life> {
+    screen: Screen<'life>,
     exit: bool,
+    data: &'life Database
 }
 
-enum Screen {
-    Viewer(Viewer),
+enum Screen<'life> {
+    Viewer(Viewer<'life>),
 }
 
 trait AppViewBorderDetails {
@@ -38,11 +40,12 @@ struct ControlGuide {
     key_names: Vec<String>,
 }
 
-impl App {
-    pub fn new() -> App {
+impl App<'_> {
+    pub fn new(data: &Database) -> App {
         App {
-            screen: Screen::Viewer(Viewer::new()),
+            screen: Screen::Viewer(Viewer::new(data)),
             exit: false,
+            data,
         }
     }
 
@@ -77,7 +80,7 @@ impl App {
     }
 }
 
-impl Widget for &App {
+impl Widget for &App<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) where Self: Sized {
         let title = Title::from(" Shop Run Overview ".bold());
         let mut base_instructions = match &self.screen {
