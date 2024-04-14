@@ -2,6 +2,7 @@ use std::sync::{Arc, RwLock};
 
 pub type Database = Arc<RwLock<Data>>;
 
+#[derive(Clone)]
 pub struct Data {
     locations: Vec<Location>,
     shops: Vec<Shop>,
@@ -57,6 +58,7 @@ impl Data {
     }
 }
 
+#[derive(Clone)]
 pub struct Location {
     name: String,
     members_only: bool,
@@ -79,12 +81,14 @@ impl Location {
     }
 }
 
+#[derive(Clone)]
 pub struct Shop {
     name: String,
     location: String,
     members_only: bool,
 }
 
+#[derive(Clone)]
 pub enum Demand {
     High,
     Medium,
@@ -92,6 +96,7 @@ pub enum Demand {
     Unknown,
 }
 
+#[derive(Clone)]
 pub struct Item {
     name: String,
     id: u32,
@@ -101,6 +106,7 @@ pub struct Item {
     demand: Demand,
 }
 
+#[derive(Clone)]
 pub struct ShopItem {
     shop: String,
     item_id: u32,

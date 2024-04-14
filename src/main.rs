@@ -1,6 +1,7 @@
 mod tui;
 mod app;
 mod data;
+mod style;
 
 use std::sync::{Arc, RwLock};
 use app::App;

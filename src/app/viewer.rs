@@ -55,7 +55,7 @@ impl<'life> Viewer<'life> {
     }
 }
 
-impl Widget for &Viewer<'_> {
+impl Widget for &mut Viewer<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) where Self: Sized {
         let layout = Layout::default()
             .direction(Direction::Vertical)
@@ -69,7 +69,7 @@ impl Widget for &Viewer<'_> {
             .select(self.tab.as_index());
         tabs.render(layout[0], buf);
         let child_area = layout[1];
-        match &self.tab {
+        match &mut self.tab {
             Tab::Locations(locations) => locations.render(child_area, buf),
             Tab::Shops => {},
             Tab::Items => {},

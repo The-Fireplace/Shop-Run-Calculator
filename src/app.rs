@@ -75,12 +75,12 @@ impl App<'_> {
         Ok(())
     }
     
-    fn render_frame(&self, frame: &mut Frame) {
+    fn render_frame(&mut self, frame: &mut Frame) {
         frame.render_widget(self, frame.size());
     }
 }
 
-impl Widget for &App<'_> {
+impl Widget for &mut App<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) where Self: Sized {
         let title = Title::from(" Shop Run Overview ".bold());
         let mut base_instructions = match &self.screen {
@@ -120,7 +120,7 @@ impl Widget for &App<'_> {
             .border_set(border::THICK);
         let screen_bounds = block.inner(area);
         block.render(area, buf);
-        match &self.screen {
+        match &mut self.screen {
             Screen::Viewer(viewer) => viewer.render(screen_bounds, buf),
         }
     }
