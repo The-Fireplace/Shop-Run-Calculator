@@ -6,7 +6,9 @@ use ratatui::style::{Color, Style};
 use ratatui::widgets::Tabs;
 
 use crate::app::{AppKeyHandler, AppViewBorderDetails, ControlGuide};
+use crate::app::viewer::items::Items;
 use crate::app::viewer::locations::Locations;
+use crate::app::viewer::shops::Shops;
 use crate::data::Database;
 
 mod locations;
@@ -15,24 +17,24 @@ mod items;
 
 enum Tab<'life> {
     Locations(Locations<'life>),
-    Shops,
-    Items,
+    Shops(Shops<'life>),
+    Items(Items<'life>),
 }
 
 impl<'life> Tab<'life> {
     fn next(&self, data: &'life Database) -> Tab<'life> {
         match self {
-            Tab::Locations(_) => Tab::Shops,
-            Tab::Shops => Tab::Items,
-            Tab::Items => Tab::Locations(Locations::new(data)),
+            Tab::Locations(_) => Tab::Shops(Shops::new(data)),
+            Tab::Shops(_) => Tab::Items(Items::new(data)),
+            Tab::Items(_) => Tab::Locations(Locations::new(data)),
         }
     }
 
     fn as_index(&self) -> usize {
         match self {
             Tab::Locations(_) => 0,
-            Tab::Shops => 1,
-            Tab::Items => 2,
+            Tab::Shops(_) => 1,
+            Tab::Items(_) => 2,
         }
     }
 
@@ -71,8 +73,8 @@ impl Widget for &mut Viewer<'_> {
         let child_area = layout[1];
         match &mut self.tab {
             Tab::Locations(locations) => locations.render(child_area, buf),
-            Tab::Shops => {},
-            Tab::Items => {},
+            Tab::Shops(shops) => shops.render(child_area, buf),
+            Tab::Items(items) => items.render(child_area, buf),
         }
     }
 }
@@ -83,11 +85,11 @@ impl AppViewBorderDetails for &Viewer<'_> {
             Tab::Locations(locations) => {
                 locations.get_controls()
             }
-            Tab::Shops => {
-                vec![]
+            Tab::Shops(shops) => {
+                shops.get_controls()
             }
-            Tab::Items => {
-                vec![]
+            Tab::Items(items) => {
+                items.get_controls()
             }
         };
         base_instructions.push(ControlGuide {
@@ -108,8 +110,8 @@ impl AppKeyHandler for &mut Viewer<'_> {
             _ => {
                 match &mut self.tab {
                     Tab::Locations(locations) => locations.handle_key_event(key_code),
-                    Tab::Shops => {},
-                    Tab::Items => {},
+                    Tab::Shops(shops) => shops.handle_key_event(key_code),
+                    Tab::Items(items) => items.handle_key_event(key_code),
                 }
             },
         }
