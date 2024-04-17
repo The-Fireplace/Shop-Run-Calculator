@@ -11,19 +11,26 @@ pub struct Shops<'life> {
     list_state: ListState,
 }
 
-impl Shops<'_> {
-    pub fn new(data: &Database) -> Shops {
-        let data_reader = data.read().expect("Must be able to read database");
-        let active_shops = data_reader.get_all_shops().clone();
-        let mut list_state = ListState::default();
-        if active_shops.len() > 0 {
-            list_state.select(Some(0));
-        }
+impl<'life> Shops<'life> {
+    pub fn new(data: &'life Database) -> Shops<'life> {
+        if let Ok(data_reader) = data.read() {
+            let active_shops = data_reader.get_filter().get_available_shops(&data_reader);
+            let mut list_state = ListState::default();
+            if active_shops.len() > 0 {
+                list_state.select(Some(0));
+            }
 
-        Shops {
-            data,
-            active_shops,
-            list_state,
+            Shops {
+                data,
+                active_shops,
+                list_state,
+            }
+        } else {
+            Shops {
+                data,
+                active_shops: vec![],
+                list_state: ListState::default(),
+            }
         }
     }
 }

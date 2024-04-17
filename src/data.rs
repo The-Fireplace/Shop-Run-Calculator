@@ -1,4 +1,7 @@
 use std::sync::{Arc, RwLock};
+use crate::data::filter::Filter;
+
+pub mod filter;
 
 pub type Database = Arc<RwLock<Data>>;
 
@@ -8,6 +11,7 @@ pub struct Data {
     shops: Vec<Shop>,
     items: Vec<Item>,
     shop_items: Vec<ShopItem>,
+    filter: Filter,
 }
 
 impl Data {
@@ -41,7 +45,8 @@ impl Data {
                 item_id: 1,
                 price: 2,
                 stock: 10,
-            }]
+            }],
+            filter: Filter::new(),
         }
     }
     
@@ -55,6 +60,18 @@ impl Data {
     
     pub fn get_all_items(&self) -> &Vec<Item> {
         &self.items
+    }
+    
+    pub fn get_all_shop_items(&self) -> &Vec<ShopItem> {
+        &self.shop_items
+    }
+    
+    pub fn get_filter(&self) -> &Filter {
+        &self.filter
+    }
+    
+    pub fn get_mut_filter(&mut self) -> &mut Filter {
+        &mut self.filter
     }
 }
 
@@ -138,6 +155,10 @@ impl Item {
             stackable,
             demand,
         }
+    }
+    
+    pub fn get_id(&self) -> u32 {
+        self.id
     }
     
     pub fn get_name(&self) -> &str {

@@ -1,8 +1,8 @@
 use crossterm::event::KeyCode;
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
-use ratatui::prelude::{Constraint, Direction, Layout, Widget, StatefulWidget};
-use ratatui::widgets::{List, ListState};
+use ratatui::prelude::{Constraint, Direction, Layout, StatefulWidget, Text, Widget};
+use ratatui::widgets::{List, ListItem, ListState};
 
 use crate::app::{AppKeyHandler, AppViewBorderDetails, ControlGuide};
 use crate::data::{Database, Location};
@@ -14,8 +14,8 @@ pub struct Locations<'life> {
     list_state: ListState,
 }
 
-impl Locations<'_> {
-    pub fn new(data: &Database) -> Locations {
+impl<'life> Locations<'life> {
+    pub fn new(data: &'life Database) -> Locations<'life> {
         let data_reader = data.read().expect("Must be able to read database");
         let active_locations = data_reader.get_all_locations().clone();
         let mut list_state = ListState::default();
@@ -29,6 +29,19 @@ impl Locations<'_> {
             list_state,
         }
     }
+
+    fn is_active_filter_selected(&self) -> bool {
+        match self.list_state.selected() {
+            Some(selected) => match self.data.read() {
+                Ok(data_reader) => match data_reader.get_filter().get_location() {
+                    Some(location) => location == self.active_locations[selected].get_name(),
+                    None => false,
+                }
+                Err(_) => false,
+            }
+            None => false,
+        }
+    }
 }
 
 impl Widget for &mut Locations<'_> {
@@ -39,8 +52,20 @@ impl Widget for &mut Locations<'_> {
                 Constraint::Percentage(50),
                 Constraint::Percentage(50),
             ]).split(area);
+        let mut active_filter = None;
+        if let Ok(data_reader) = self.data.read() {
+            active_filter = data_reader.get_filter().get_location().map(|location| location.to_string());
+        }
         let list = style::standard_list(
-            List::new(self.active_locations.iter().map(|location| location.get_name()))
+            List::new(self.active_locations.iter().map(|location| {
+                let mut text = Text::from(location.get_name());
+                if let Some(active_filter) = &active_filter {
+                    if active_filter == location.get_name() {
+                        text = style::selected_filter(text);
+                    }
+                }
+                ListItem::new(text)
+            }))
         );
         StatefulWidget::render(list, layout[0], buf, &mut self.list_state);
         //TODO location details on the right
@@ -51,6 +76,10 @@ impl Widget for &mut Locations<'_> {
 
 impl AppViewBorderDetails for &Locations<'_> {
     fn get_controls(self) -> Vec<ControlGuide> {
+        let select_location_text = match self.is_active_filter_selected() {
+            true => "Clear Location",
+            false => "Select Location",
+        };
         vec![
             ControlGuide {
                 instruction: "Up".to_string(),
@@ -59,6 +88,10 @@ impl AppViewBorderDetails for &Locations<'_> {
             ControlGuide {
                 instruction: "Down".to_string(),
                 key_names: vec!["Down".to_string(), "S".to_string()],
+            },
+            ControlGuide {
+                instruction: select_location_text.to_string(),
+                key_names: vec!["Enter".to_string()],
             },
         ]
     }
@@ -84,6 +117,21 @@ impl AppKeyHandler for &mut Locations<'_> {
                         0
                     }
                 }));
+            }
+            KeyCode::Enter => {
+                if let Some(selected) = self.list_state.selected() {
+                    let is_active_filter_selected = self.is_active_filter_selected();
+                    match self.data.write() {
+                        Ok(mut data_writer) => {
+                            if is_active_filter_selected {
+                                data_writer.get_mut_filter().clear_location();
+                            } else {
+                                data_writer.get_mut_filter().set_location(&self.active_locations[selected]);
+                            }
+                        }
+                        Err(_) => {}
+                    }
+                }
             }
             _ => {}
         }
